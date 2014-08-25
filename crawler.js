@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+var colors = require('colors');
+var mongoProcessing = require('mongo-cursor-processing')
+
 var Mongo = require('./mongo.js');
 var base_url = 'http://cnes.datasus.gov.br/'
 
@@ -48,7 +51,7 @@ function get_plain_html(url, callback) {
                   });
 
             } else {
-                  console.log(err);
+                  console.log(error);
             }
       };
 
@@ -79,6 +82,10 @@ function parse_states(html_document, url) {
             states.push(state_json)
       }
 
+      html_document = null
+      table = null
+      trs = null
+
       return states
 }
 
@@ -105,6 +112,10 @@ function parse_cities(html_document, url) {
             cities.push(city_json)
       }
 
+      html_document = null
+      table = null
+      trs = null
+
       return cities
 }
 
@@ -117,8 +128,17 @@ function get_entities_urls_from_city(html_document) {
 
       for (var i = links.length - 1; i >= 0; i--) {
             var entity_url_object = {"url": base_url + links[i].getAttribute('href')}
+
+            var params = getQueryStrings(base_url + links[i].getAttribute('href'));
+            entity_url_object = merge_json(entity_url_object, params);
+
             entities.push(entity_url_object);
       }
+
+      html_document = null
+      div = null
+      table = null
+      links = null
 
       return entities
 }
@@ -147,6 +167,11 @@ function parse_entity_data(html_document, url) {
 
       json = removeSpacesAndTabsFromString(json)
 
+      html_document = null
+      table_entity = null
+      rows = null
+      params = null
+
       return json
 }
 
@@ -159,6 +184,8 @@ function merge_json(json1, json2) {
             json1[key] = value
       }
 
+      json2 = null
+
       return json1
 }
 
@@ -170,111 +197,84 @@ function merge_entity_with_cities(state, city, entity) {
 
       json = removeSpacesAndTabsFromString(json)
 
+      base_json = null
+      entity_json = null
+
       Mongo.save_to_db(json)
+
+      json = null;
 }
 
-function download(state_index) {
-      states = parse_states()
-      state = states[state_index]
-      cities = parse_cities_by_state(state)
-
-      for (var city_index = 0; city_index < cities.length; city_index++) {
-            var city = cities[i]
-            download_entities_from_city(state, city_index, city)
-      }
-}
-
-function download_entities_from_city(state, city_index, city) {
-      entities = []
-
-      entities = parse_entities_by_city(city)
-
-      for (var i = 0; i < entities.length; i++) {
-            merge_entity_with_cities(state, city, entities[i])
-      }
-}
-
-function initialize_urls(state_index) {
-      if (!states) {
-            states = parse_states()
-      }
-
-      var state = states[state_index]
-      var cities = parse_cities_by_state(state)
-
-      var entities = []
-
-      for (var city_index = 0; city_index < cities.length; city_index++) {
-            var city = cities[city_index];
-            var entities = parse_entities_by_city(city)
-
-            for (var i = 0; i < entities.length; i++) {
-                  if (entities[i]) {
-                        Mongo.save_url_to_db(entities[i]) // Não pode dar erro
-                  }
+function initialize_urls() {
+      var cities = Mongo.getAllCities(function (citiesCursor) {
+            function processItem(item, done) {
+                  download_entities_urls(item.url, done)
+                  item = null;
             }
-      }
-}
 
-function download_all_urls() {
-      if (!states) {
-            states = parse_states()
-      }
-
-      for (var i = 0; i < states.length; i++) {
-            initialize_urls(states[i])
-      }
-}
-
-function onReceiveStates(html_document, url) {
-      console.log('recebido os estados!!')
-      var states = parse_states(html_document, url)
-      Mongo.save_states(states)
-
-      for (var i = 0; i < states.length; i++) {
-            download_cities(states[i].url)
-      }
-}
-
-function onReceiveCities(html_document, url) {
-      var cities = parse_cities(html_document, url)
-      Mongo.save_cities(cities)
-
-      for (var i = 0; i < cities.length; i++) {
-            download_entities_urls(cities[i].url)
-      }
-}
-
-function onReceiveEntities(html_document, url) {
-      console.log("preparando pra parsear os dados...")
-      var entities_urls = get_entities_urls_from_city(html_document)
-      console.log("preparando para salvar! ", entities_urls.length)
-      Mongo.save_entity_url(entities_urls)
-}
-
-function onReceiveEntity(html_document, url) {
-      var entity = parse_entity_data(html_document, url);
-      entity = removeSpacesAndTabsFromString(entity);
-      Mongo.save_entity(entity)
+            mongoProcessing(citiesCursor, processItem, function (err) {
+                  if (err) {
+                        console.error('on noes, an error', err)
+                        process.exit(1)
+                  }
+            })
+      });
 }
 
 function download_states(base_url) {
       console.log('Baixando estados: ', base_url)
-      get_plain_html(base_url, onReceiveStates)
+      get_plain_html(base_url, function (html_document, url) {
+            console.log('recebido os estados!!')
+            var states = parse_states(html_document, url)
+            Mongo.save_states(states)
+
+            for (var i = 0; i < states.length; i++) {
+                  console.log(i, " de ", states.length)
+                  download_cities(states[i].url)
+            }
+
+            states = null;
+      })
 }
 
 function download_cities(state_url) {
       console.log('Baixando Cidades: ', state_url)
-      get_plain_html(state_url, onReceiveCities)
+      get_plain_html(state_url, function (html_document, url) {
+            var cities = parse_cities(html_document, url)
+            Mongo.save_cities(cities)
+
+            for (var i = 0; i < cities.length; i++) {
+                  download_entities_urls(cities[i].url)
+            }
+
+            cities = null;
+      })
 }
 
-function download_entities_urls(city_url) {
+function download_entities_urls(city_url, callbackOnSuccess) {
       console.log('Baixando Entidades da cidade: ', city_url)
-      get_plain_html(city_url, onReceiveEntities)
+      get_plain_html(city_url, function (html_document, url) {
+                var entities_urls = get_entities_urls_from_city(html_document)
+                console.log("preparando para salvar! ", entities_urls.length)
+                Mongo.save_entity_url(entities_urls)
+
+                entities_urls = null;
+
+                callbackOnSuccess();
+          }
+      )
 }
 
-function download_entity(entity_url) {
-      get_plain_html(entity_url, onReceiveEntity)
+function download_entity(entity_url, callbackOnSuccess) {
+      get_plain_html(entity_url, function (html_document, url) {
+            var entity = parse_entity_data(html_document, url);
+            entity = removeSpacesAndTabsFromString(entity);
+            Mongo.save_entity(entity);
+
+            entity = null;
+
+            callbackOnSuccess();
+      });
 }
 
 function removeSpacesAndTabsFromString(json) {
@@ -283,6 +283,8 @@ function removeSpacesAndTabsFromString(json) {
       for (key in json_keys) {
             json[json_keys[key]] = json[json_keys[key]].replace(/^\s+|\s+$/g, "");
       }
+
+      json_keys = null
 
       return json
 }
@@ -306,24 +308,66 @@ function getQueryStrings(url) {
 }
 
 function download_all() {
-      var callback = function(all_entities)
-      {
-            for (var i = 0; i < all_entities.length; i++) {
-                  download_entity(all_entities[i])
-            }
-      }
+      console.log("downloading all")
 
-      Mongo.get_all_entities(callback)
+      Mongo.get_all_entities(function (entities_cursor) {
+            entities_cursor.count(function (error, entities_count) {
+                  console.log("quantidade de registros: ", entities_count)
+
+                  var count = 0;
+
+                  function showMessage() {
+                        count++;
+                        var message = count + " de " + entities_count
+                        console.log(message.green)
+                  }
+
+                  function processItem(doc, done) {
+
+                        Mongo.isEntityAlreadyDownloaded(doc, function (databaseResultDocument, documentExists) {
+
+                              global.gc();
+
+                              if (!documentExists) // download entity only if it was not downloaded.
+                              {
+                                    if (doc && doc.url) {
+                                          download_entity(doc.url, function () {
+                                                showMessage();
+                                                done();
+
+                                                doc = null;
+                                                databaseResultDocument = null
+                                          });
+                                    }
+                              }
+                              else {
+                                    showMessage();
+                                    done();
+                              }
+                        });
+                  }
+
+                  mongoProcessing(entities_cursor, processItem, function (err) {
+                        if (err) {
+                              console.error('on noes, an error', err)
+                              process.exit(1)
+                        }
+                  })
+            });
+      });
 }
 
-function initialize()
-{
-      var callback = function()
-      {
-            download_states('http://cnes.datasus.gov.br/Lista_Tot_Es_Estado.asp')
+function initialize() {
+      var callback = function () {
+            //download_states('http://cnes.datasus.gov.br/Lista_Tot_Es_Estado.asp')
             //download_cities('http://cnes.datasus.gov.br/Lista_Tot_Es_Municipio.asp?Estado=35&NomeEstado=SAO%20PAULO')
             //download_entities_urls('http://cnes.datasus.gov.br/Lista_Es_Municipio.asp?VEstado=35&VCodMunicipio=354990&NomeEstado=SAO%20PAULO')
-            //download_entity('http://cnes.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=3549906891136&VEstado=35&VCodMunicipio=354990')
+
+            //var url = 'http://cnes.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=3549906891136&VEstado=35&VCodMunicipio=354990'
+            //download_entity(url, function() { console.log('baixado!!!') })
+
+            initialize_urls()
+            //download_all();
       }
 
       Mongo.initialize_db(callback)
