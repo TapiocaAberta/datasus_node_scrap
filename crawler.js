@@ -16,6 +16,7 @@
 
 var colors = require('colors');
 var mongoProcessing = require('mongo-cursor-processing')
+var request = require('request');
 
 var Mongo = require('./mongo.js');
 var base_url = 'http://cnes.datasus.gov.br/'
@@ -27,8 +28,6 @@ function get_base_url() {
 }
 
 function get_plain_html(url, callback) {
-      var request = require('request');
-
       var params = {
             uri     : url,
             method  : "GET",
@@ -45,10 +44,17 @@ function get_plain_html(url, callback) {
                   iconv = require('iconv-lite');
                   var utf8String = iconv.decode(new Buffer(html), "UTF-8");
 
-                  env(utf8String, function (errors, window) {
-                        var $ = require('jquery')(window)
+                  env(utf8String, function (errors, window_doc) {
+                        var $ = require('jquery')(window_doc)
                         callback($, url);
+
+                        $ = null;
+                        window_doc = null;
                   });
+
+                  error = null; 
+                  response = null;
+                  html = null;
 
             } else {
                   console.log(error);
@@ -205,23 +211,38 @@ function merge_entity_with_cities(state, city, entity) {
       json = null;
 }
 
-function initialize_urls() {
-      var cities = Mongo.getAllCities(function (citiesCursor) {
-            function processItem(item, done) {
-                  download_entities_urls(item.url, done)
-                  item = null;
 
-                  global.gc();
-            }
+function removeSpacesAndTabsFromString(json) {
+      var json_keys = Object.keys(json);
 
-            mongoProcessing(citiesCursor, processItem, function (err) {
-                  if (err) {
-                        console.error('on noes, an error', err)
-                        process.exit(1)
-                  }
-            })
-      });
+      for (key in json_keys) {
+            json[json_keys[key]] = json[json_keys[key]].replace(/^\s+|\s+$/g, "");
+      }
+
+      json_keys = null
+
+      return json
 }
+
+function getQueryStrings(url) {
+      var result;
+      var url_params = url.indexOf('?') + 1
+
+      if (url_params) {
+            var qs = url.substring(url_params).split('&');
+
+            if (qs) {
+                  for (var i = 0, result = {}; i < qs.length; i++) {
+                        qs[i] = qs[i].split('=');
+                        result[qs[i][0]] = decodeURIComponent(qs[i][1]);
+                  }
+            }
+      }
+
+      return result;
+}
+
+
 
 function download_states(base_url) {
       console.log('Baixando estados: ', base_url)
@@ -279,34 +300,28 @@ function download_entity(entity_url, callbackOnSuccess) {
       });
 }
 
-function removeSpacesAndTabsFromString(json) {
-      var json_keys = Object.keys(json);
+function initialize_urls() {
+      var cities = Mongo.getAllCities(function (citiesCursor) {
+            var processItem = function(item, done) {
+                  var download_reference;
 
-      for (key in json_keys) {
-            json[json_keys[key]] = json[json_keys[key]].replace(/^\s+|\s+$/g, "");
-      }
-
-      json_keys = null
-
-      return json
-}
-
-function getQueryStrings(url) {
-      var result;
-      var url_params = url.indexOf('?') + 1
-
-      if (url_params) {
-            var qs = url.substring(url_params).split('&');
-
-            if (qs) {
-                  for (var i = 0, result = {}; i < qs.length; i++) {
-                        qs[i] = qs[i].split('=');
-                        result[qs[i][0]] = decodeURIComponent(qs[i][1]);
+                  var onFinish = function() {
+                        processItem = null;
+                        download_reference = null
+                        global.gc();
+                        done();
                   }
-            }
-      }
 
-      return result;
+                  download_reference = download_entities_urls(item.url, onFinish)
+            }
+
+            mongoProcessing(citiesCursor, processItem, 20 function (err) {
+                  if (err) {
+                        console.error('on noes, an error', err)
+                        process.exit(1)
+                  }
+            })
+      });
 }
 
 function download_all() {
@@ -324,11 +339,9 @@ function download_all() {
                         console.log(message.green)
                   }
 
-                  function processItem(doc, done) {
+                  var processItem = function(doc, done) {
 
                         Mongo.isEntityAlreadyDownloaded(doc, function (databaseResultDocument, documentExists) {
-
-                              global.gc();
 
                               if (!documentExists) // download entity only if it was not downloaded.
                               {
@@ -339,17 +352,19 @@ function download_all() {
 
                                                 doc = null;
                                                 databaseResultDocument = null
+                                                processItem = null;
+
+                                                global.gc();
                                           });
                                     }
                               }
                               else {
-                                    showMessage();
                                     done();
                               }
                         });
                   }
 
-                  mongoProcessing(entities_cursor, processItem, function (err) {
+                  mongoProcessing(entities_cursor, processItem, 20, function (err) {
                         if (err) {
                               console.error('on noes, an error', err)
                               process.exit(1)
