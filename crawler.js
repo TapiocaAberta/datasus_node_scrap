@@ -210,6 +210,8 @@ function initialize_urls() {
             function processItem(item, done) {
                   download_entities_urls(item.url, done)
                   item = null;
+
+                  global.gc();
             }
 
             mongoProcessing(citiesCursor, processItem, function (err) {
@@ -366,8 +368,8 @@ function initialize() {
             //var url = 'http://cnes.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=3549906891136&VEstado=35&VCodMunicipio=354990'
             //download_entity(url, function() { console.log('baixado!!!') })
 
-            initialize_urls()
-            //download_all();
+            //initialize_urls()
+            download_all();
       }
 
       Mongo.initialize_db(callback)

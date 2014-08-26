@@ -84,12 +84,12 @@ exports.queryByObject = function (json, collection_name, callback) {
 
 exports.getAllCities = function (callback) {
       var collection = database.collection('cities');
-      collection.find({}, function(err, result_cursor){
+      collection.find().sort({"$natural": -1}, function(err, result_cursor){
             callback(result_cursor);
             
-            //result_cursor = null
-            //collection = null
-            //global.gc();
+            result_cursor = null
+            collection = null
+            global.gc();
       });
 }
 
