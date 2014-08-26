@@ -315,7 +315,7 @@ function initialize_urls() {
                   download_reference = download_entities_urls(item.url, onFinish)
             }
 
-            mongoProcessing(citiesCursor, processItem, 20 function (err) {
+            mongoProcessing(citiesCursor, processItem, 20, function (err) {
                   if (err) {
                         console.error('on noes, an error', err)
                         process.exit(1)
