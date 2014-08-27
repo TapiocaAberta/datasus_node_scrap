@@ -118,10 +118,24 @@ exports.isEntityAlreadyDownloaded = function(json, callback)
 }
 
 exports.get_all_entities = function(callback) {
-      var collection = database.collection("entity_url");
-      var all_entities = collection.find();
+      var collection = database.collection("entities");
+      
+      collection.find({}, { "url" : 1, "_id" : 0 }, function(error, result_cursor){
+            result_cursor.toArray(function(err, urls_objects_arrays) {
+                  var all_entities_urls = []
 
-      callback(all_entities);
+                  for (var i = 0; i < urls_objects_arrays.length; i++) {
+                        all_entities_urls.push(urls_objects_arrays[i].url)
+                  };
+
+                  var url_collection = database.collection("entity_url");
+                  var all_entities = url_collection.find({ "url": { $nin: all_entities_urls } });
+                  
+                  all_entities.count(function(e, count){
+                        callback(all_entities);
+                  })
+            });
+      });
 }
 
 exports.export_to_json_file = function (json) {
