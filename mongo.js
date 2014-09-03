@@ -2,6 +2,7 @@ var fs = require('fs');
 
 // db.states.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 // db.entity_url.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
+// db.entity_url_not_downloaded.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 // db.cities.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 // db.entities.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 
@@ -29,7 +30,7 @@ function save_to_db(json, collection_name) {
             var collection = database.collection(collection_name);
             collection.insert(json, function (err, inserted) {
                   if (err) {
-                        console.log(err);
+                        //console.log(err);
                   } else {
                         console.log("salvo com sucesso!")
                         json = null;
@@ -39,6 +40,26 @@ function save_to_db(json, collection_name) {
                   global.gc();
             });
       }
+}
+
+exports.update_city = function (city) {
+      var collection_name = 'cities'
+
+      if(city)
+      {
+            // Connect to the db
+            var collection = database.collection(collection_name);
+            collection.update({_id: city._id}, {$set: {done:"true"}}, function (err, inserted) {
+                  if (err) {
+                        console.log(err);
+                  } else {
+                        city = null;
+                  }
+
+                  collection = null;
+                  global.gc();
+            });
+      }     
 }
 
 exports.save_entity = function (entity) {
@@ -84,7 +105,7 @@ exports.queryByObject = function (json, collection_name, callback) {
 
 exports.getAllCities = function (callback) {
       var collection = database.collection('cities');
-      collection.find().sort({"$natural": -1}, function(err, result_cursor){
+      collection.find({done : "false"}).sort({"$natural": -1}, function(err, result_cursor) {
             callback(result_cursor);
             
             result_cursor = null
@@ -118,23 +139,53 @@ exports.isEntityAlreadyDownloaded = function(json, callback)
 }
 
 exports.get_all_entities = function(callback) {
-      var collection = database.collection("entities");
-      
-      collection.find({}, { "url" : 1, "_id" : 0 }, function(error, result_cursor){
-            result_cursor.toArray(function(err, urls_objects_arrays) {
-                  var all_entities_urls = []
+      var collection = database.collection('entity_url_not_downloaded');
 
-                  for (var i = 0; i < urls_objects_arrays.length; i++) {
-                        all_entities_urls.push(urls_objects_arrays[i].url)
+      collection.find({}, function(err, result_cursor) {
+            callback(result_cursor);
+            
+            result_cursor = null
+            collection = null
+            global.gc();
+      });
+}
+
+
+exports.delete_downloaded_urls = function(callback) {
+      var entities_collection = database.collection("entities");
+      var entity_url_collection = database.collection("entity_url");
+      var not_downloaded_url_collection = database.collection("entity_url_not_downloaded");
+
+      //entity_url_collection.copyTo("entity_url_not_downloaded"); // clone the collection
+                        
+      entities_collection.find({}, { "url" : 1, "_id" : 0 }).sort({"$natural": -1}, function(error, result_cursor){
+            result_cursor.toArray(function(err, all_downloaded_urls) {
+                  console.log("qtd: ", all_downloaded_urls.length)
+
+                  for (var i = 0; i < all_downloaded_urls.length; i++) {
+                        not_downloaded_url_collection.findAndRemove(all_downloaded_urls[i], function(err, result_document) {
+                              if(err) {
+                                    return console.log(err);
+                              }
+
+                              return console.log(err, result_document);
+                        });
                   };
-
-                  var url_collection = database.collection("entity_url");
-                  var all_entities = url_collection.find({ "url": { $nin: all_entities_urls } });
-                  
-                  all_entities.count(function(e, count){
-                        callback(all_entities);
-                  })
             });
+            
+            //callback();
+      });
+}
+
+exports.remove_downloaded_url = function(url) {
+      var url_collection = database.collection("entity_url_not_downloaded");      
+      
+      return url_collection.remove({url: url}, function(err, result_document) {
+            if(err) {
+                  return console.log(err);
+            }
+
+            return;
       });
 }
 

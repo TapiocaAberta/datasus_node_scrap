@@ -39,8 +39,6 @@ function get_plain_html(url, callback) {
             if (!error) {
                   var env = require('jsdom').env
 
-                  console.log('criando o documento ')
-
                   iconv = require('iconv-lite');
                   var utf8String = iconv.decode(new Buffer(html), "UTF-8");
 
@@ -55,6 +53,11 @@ function get_plain_html(url, callback) {
                   error = null; 
                   response = null;
                   html = null;
+                  utf8String = null;
+
+                  onResponse = null;
+
+                  global.gc();
 
             } else {
                   console.log(error);
@@ -306,6 +309,9 @@ function initialize_urls() {
                   var download_reference;
 
                   var onFinish = function() {
+                        item.done = "true";
+                        Mongo.update_city(item)
+
                         processItem = null;
                         download_reference = null
                         global.gc();
@@ -315,7 +321,7 @@ function initialize_urls() {
                   download_reference = download_entities_urls(item.url, onFinish)
             }
 
-            mongoProcessing(citiesCursor, processItem, 20, function (err) {
+            mongoProcessing(citiesCursor, processItem, 10, function (err) {
                   if (err) {
                         console.error('on noes, an error', err)
                         process.exit(1)
@@ -348,23 +354,27 @@ function download_all() {
                                     if (doc && doc.url) {
                                           download_entity(doc.url, function () {
                                                 showMessage();
-                                                done();
+
+                                                Mongo.remove_downloaded_url(doc.url);
 
                                                 doc = null;
                                                 databaseResultDocument = null
                                                 processItem = null;
 
                                                 global.gc();
+
+                                                return done();
                                           });
                                     }
                               }
                               else {
-                                    done();
+                                    Mongo.remove_downloaded_url(databaseResultDocument.url);
+                                    return done();
                               }
                         });
                   }
 
-                  mongoProcessing(entities_cursor, processItem, 20, function (err) {
+                  mongoProcessing(entities_cursor, processItem, 10, function (err) {
                         if (err) {
                               console.error('on noes, an error', err)
                               process.exit(1)
