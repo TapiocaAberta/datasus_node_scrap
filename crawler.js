@@ -394,7 +394,9 @@ function initialize() {
             //download_entity(url, function() { console.log('baixado!!!') })
 
             //initialize_urls()
-            download_all();
+            //download_all();
+
+            Mongo.exportToCSV();
       }
 
       Mongo.initialize_db(callback)
