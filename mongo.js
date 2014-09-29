@@ -21,6 +21,7 @@ exports.initialize_db = function(callback) {
             database = db;
 
             callback();
+            db.close();
       });
 };
 
