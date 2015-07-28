@@ -11,4 +11,3 @@ before_script:
 services: mongodb
 notifications:
   email: false
-before_script: chmod +x script/coverage
