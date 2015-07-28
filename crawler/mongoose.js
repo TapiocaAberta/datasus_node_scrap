@@ -6,7 +6,6 @@
 
 var mongoose = require('mongoose'),
     Q = require('q'),
-    fs = require('fs'),
     colors = require('colors');
 
 mongoose.connect('mongodb://localhost/cnes2015');
