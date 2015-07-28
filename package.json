@@ -1,17 +1,20 @@
 {
-      "name"        : "node-web-scrape",
-      "version"     : "0.0.1",
-      "description" : "Web scraping of cnes datasus",
-      "main"        : "server.js",
-      "author"      : "Paulo Luan",
-      "dependencies": {
-            "express": "latest",
-            "request": "latest",
-            "cheerio": "latest",
-            "mongodb": "latest",
-            "jsdom"  : "latest",
-            "jquery" : "latest",
-            "iconv-lite" : "latest",
-            "request-replay": "latest"
-      }
+    "name": "node-web-scrape",
+    "version": "0.0.1",
+    "description": "Web scraping of cnes datasus",
+    "main": "server.js",
+    "author": "Paulo Luan",
+    "scripts": {
+        "test": "script/test"
+    },
+    "dependencies": {
+        "express": "latest",
+        "request": "latest",
+        "cheerio": "latest",
+        "mongodb": "latest",
+        "jsdom": "latest",
+        "jquery": "latest",
+        "iconv-lite": "latest",
+        "request-replay": "latest"
+    }
 }

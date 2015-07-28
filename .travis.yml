@@ -1,0 +1,11 @@
+sudo: false
+language: node_js
+node_js:
+  - 'iojs'
+  - '0.12'
+  - '0.10'
+env:
+  - EXPORT_COVERAGE=1
+notifications:
+  email: false
+before_script: chmod +x script/coverage
