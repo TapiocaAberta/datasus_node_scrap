@@ -2,76 +2,112 @@ var mongoose = require('./mongoose'),
     Q = require('q'),
     colors = require('colors'),
     http = require('http'),
-    parser = require('./parser.js');
+    parser = require('./parser.js'),
+    jsdom = require('jsdom'),
+    jquery = require('jquery'),
+    iconv = require('iconv-lite');
 
 var baseUrl = 'http://cnes.datasus.gov.br/';
 
 var doGet = function(url) {
     var deferred = Q.defer();
+
     http.get(url, function(res) {
         var data = '';
         res.setEncoding('binary');
+
         res.on('data', function(chunk) {
             return data += chunk;
         });
+
         res.on('end', function() {
-            iconv = require('iconv-lite');
-            var utf8String = iconv.decode(new Buffer(data), 'UTF-8');
-            deferred.resolve(utf8String);
+            var utf8String = iconv.decode(new Buffer(data), "UTF-8");
+            jsdom.env(utf8String, function(errors, htmlDoc) {
+                var $ = jquery(htmlDoc);
+                deferred.resolve($, url);
+            });
         });
+
         res.on('error', function(err) {
             deferred.reject(err);
         });
     });
+
     return deferred.promise;
 };
 
-// Parsear todos os estados pegando os ids
-function getBaseUrl() {
-    var statesUrl = baseUrl + 'Lista_Tot_Es_Estado.asp';
-    return statesUrl;
+function downloadAndParse(parserFunction, url) {
+    var deferred = Q.defer();
+
+    doGet(url)
+        .then(function(html) {
+            var result = parserFunction(html, url);
+            deferred.resolve(result);
+        }).catch(function(err) {
+            deferred.reject(err);
+        });
+
+    return deferred.promise;
 }
 
-function downloadStates(baseUrl) {
+
+function processStates(baseUrl) {
     console.log('Baixando estados: ', baseUrl);
-    doGet(baseUrl)
-        .then(function(htmlDocument, url) {
-            console.log('recebido os estados!!');
-            var states = parseStates(htmlDocument, url);
+
+    downloadAndParse(parser.parseStates, baseUrl)
+        .then(function(states) {
             Mongo.save_states(states);
             for (var i = 0; i < states.length; i++) {
                 console.log(i, ' de ', states.length);
                 downloadCities(states[i].url);
             }
-            states = null;
+        })
+        .catch(function(err) {
+            console.log(err);
         });
 }
 
-function downloadCities(stateUrl) {
+function processCities(stateUrl) {
     console.log('Baixando Cidades: ', stateUrl);
-    doGet(stateUrl)
-        .then(function(htmlDocument, url) {
-            var cities = parseCities(htmlDocument, url);
+
+    downloadAndParse(parser.parseCities, stateUrl)
+        .then(function(cities) {
             Mongo.save_cities(cities);
             for (var i = 0; i < cities.length; i++) {
                 downloadEntitiesUrls(cities[i].url);
             }
-            cities = null;
+        })
+        .catch(function(err) {
+            console.log(err);
         });
 }
 
-function downloadEntitiesUrls(cityUrl, callbackOnSuccess) {
+function processEntitiesUrls(cityUrl, callbackOnSuccess) {
     console.log('Baixando Entidades da cidade: ', cityUrl);
-    doGet(cityUrl, function(htmlDocument, url) {
-        var entitiesUrls = getEntitiesUrlsFromCity(htmlDocument);
-        console.log('preparando para salvar! ', entitiesUrls.length);
-        Mongo.save_entity_url(entitiesUrls);
-        entitiesUrls = null;
-        callbackOnSuccess();
-    });
+
+    downloadAndParse(parser.getEntitiesUrlsFromCity, cityUrl)
+        .then(function(entitiesUrls) {
+            console.log('preparando para salvar! ', entitiesUrls.length);
+            Mongo.save(entitiesUrls, models.EntityUrl);
+            callbackOnSuccess();
+        })
+        .catch(function(err) {
+            console.log(err);
+        });
 }
 
 function downloadEntity(entityUrl, callbackOnSuccess) {
+
+    downloadAndParse(parser.parseCities, url)
+        .then(function(result) {
+
+
+        })
+        .catch(function(err) {
+            console.log(err);
+        });
+
+
     doGet(entityUrl, function(htmlDocument, url) {
         var entity = parseEntityData(htmlDocument, url);
         entity = removeSpacesAndTabsFromString(entity);
@@ -103,7 +139,10 @@ function initializeUrls() {
         });
     });
 }
+
 var self = {
-    doGet: doGet
+    doGet: doGet,
+    downloadAndParse: downloadAndParse
 };
+
 module.exports = self;

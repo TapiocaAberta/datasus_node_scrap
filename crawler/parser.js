@@ -2,6 +2,8 @@ var mongoose = require('./mongoose'),
     Q = require('q'),
     colors = require('colors');
 
+var baseUrl = 'http://cnes.datasus.gov.br/';
+
 var self = {
     parseStates: function(htmlDocument, url) {
         states = [];
@@ -10,19 +12,19 @@ var self = {
         for (var i = trs.length - 1; i >= 0; i--) {
             var tds = htmlDocument(trs[i]).find('td');
             var stateJson = {};
+
             stateJson.estado_nome = htmlDocument(tds[0]).text();
             stateJson.estado_total = htmlDocument(tds[1]).text();
             stateJson['estado_%'] = htmlDocument(tds[2]).text();
             stateJson.url = baseUrl + htmlDocument(tds[0]).find('a').attr('href');
-            var params = getQueryStrings(url);
+
+            var params = self.getQueryStrings(url);
             if (params)
-                stateJson = mergeJson(stateJson, params);
-            stateJson = removeSpacesAndTabsFromString(stateJson);
+                stateJson = self.mergeJson(stateJson, params);
+            stateJson = self.removeSpacesAndTabsFromString(stateJson);
             states.push(stateJson);
         }
-        htmlDocument = null;
-        table = null;
-        trs = null;
+
         return states;
     },
 
