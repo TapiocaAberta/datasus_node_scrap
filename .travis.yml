@@ -6,6 +6,7 @@ node_js:
   - '0.10'
 before_script:
   - npm install
+  - chmod +x ./script/test
 services: mongodb
 notifications:
   email: false
