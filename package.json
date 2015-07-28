@@ -5,7 +5,7 @@
     "main": "server.js",
     "author": "Paulo Luan",
     "scripts": {
-        "test": "script/coverage",
+        "test": "script/test",
         "lint": "script/fixmyjs.sh"
     },
     "dependencies": {
