@@ -5,6 +5,7 @@ var mongoose = require('./mongoose'),
 var baseUrl = 'http://cnes.datasus.gov.br/';
 
 var self = {
+
     parseStates: function(htmlDocument, url) {
         states = [];
         var table = htmlDocument('div[style = \'width:300; height:209; POSITION: absolute; TOP: 185px; LEFT: 400px; overflow:auto\'] table');
@@ -39,9 +40,9 @@ var self = {
             cityJson.cidade_nome = htmlDocument(tds[1]).text();
             cityJson.cidade_cadastrados = htmlDocument(tds[2]).text();
             cityJson.url = baseUrl + htmlDocument(tds[1]).find('a').attr('href');
-            var params = getQueryStrings(url);
-            cityJson = mergeJson(cityJson, params);
-            cityJson = removeSpacesAndTabsFromString(cityJson);
+            var params = self.getQueryStrings(url);
+            cityJson = self.mergeJson(cityJson, params);
+            cityJson = self.removeSpacesAndTabsFromString(cityJson);
             cities.push(cityJson);
         }
         htmlDocument = null;
@@ -59,8 +60,8 @@ var self = {
             var entityUrlObject = {
                 'url': baseUrl + links[i].getAttribute('href')
             };
-            var params = getQueryStrings(baseUrl + links[i].getAttribute('href'));
-            entityUrlObject = mergeJson(entityUrlObject, params);
+            var params = self.getQueryStrings(baseUrl + links[i].getAttribute('href'));
+            entityUrlObject = self.mergeJson(entityUrlObject, params);
             entities.push(entityUrlObject);
         }
         htmlDocument = null;
@@ -84,14 +85,11 @@ var self = {
                 json[key] = value;
             }
         }
-        var params = getQueryStrings(url);
+        var params = self.getQueryStrings(url);
         json.url = url;
-        json = mergeJson(json, params);
-        json = removeSpacesAndTabsFromString(json);
-        htmlDocument = null;
-        tableEntity = null;
-        rows = null;
-        params = null;
+        json = self.mergeJson(json, params);
+        json = self.removeSpacesAndTabsFromString(json);
+
         return json;
     },
 
@@ -108,10 +106,10 @@ var self = {
     },
 
     mergeEntityWithCities: function(state, city, entity) {
-        baseJson = mergeJson(state, city);
-        entityJson = parseEntityData(entity);
-        json = mergeJson(baseJson, entityJson);
-        json = removeSpacesAndTabsFromString(json);
+        baseJson = self.mergeJson(state, city);
+        entityJson = self.parseEntityData(entity);
+        json = self.mergeJson(baseJson, entityJson);
+        json = self.removeSpacesAndTabsFromString(json);
         baseJson = null;
         entityJson = null;
         Mongo.save_to_db(json);
