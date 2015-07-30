@@ -76,17 +76,21 @@ describe('#init', function() {
             });
     });
 
+    it('Should download the entity', function(done) {
+        //var url = entitiesUrls[0].url;
+        var url = 'http://cnes.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=1722105845432&VEstado=17&VCodMunicipio=172210';
+        url.should.be.ok;
+        should(url).be.a.String();
 
-    /*it('Should download the entity', function(done) {
-        parser.parseEntityData
+        console.log(url);
+
+        module.downloadEntity(url)
             .then(function(entity) {
-                entity.should.be.ok
-            })
-            .catch(function(error) {
-                console.log(error);
-                done(error)
+                entity.should.be.ok;
+                should(entity.url).be.ok;
+                should(entity.nome).be.ok;
+                done();
             });
-    });*/
-
+    });
 
 });

@@ -122,7 +122,7 @@ var self = {
                     downloadCities(state.url)
                         .then(processCities);
                 });
-            })
+            });
     },
 
     processCities: function(cities) {
@@ -135,15 +135,19 @@ var self = {
     },
 
     processEntities: function(entitiesUrls) {
-        console.log('preparando para salvar! ', entitiesUrls.length);
-        Mongo.save(entitiesUrls, models.EntityUrl);
 
-        parser.parseEntityData
-            .then(function(entity) {
-                Mongo.save(entity, models.Entity);
-            })
-            .catch(function(error) {
-                console.log(error);
+        //Mongo.getCursor...
+
+        self.downloadEntity()
+            .then(function(states) {
+                Mongo.save(states, models.State);
+                var statesLength = states.length;
+
+                _.forEach(states, function(state, key) {
+                    console.log(key, ' de ', statesLength);
+                    downloadCities(state.url)
+                        .then(processCities);
+                });
             });
     },
 
