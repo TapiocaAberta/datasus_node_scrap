@@ -55,7 +55,7 @@ create a file with the following content on `/etc/cron.d/crawler` (without the e
 	#!/bin/sh
 	pkill node
 	cd "<PATH_OF_SOURCE>/node_scrap/"
-	<YOUR_NODE_PATH>/node --max-old-space-size=8192 --expose-gc crawler.js > /tmp/crawler.log &
+	<YOUR_NODE_PATH>/node --max-old-space-size=8192 --expose-gc crawler/download.js > /tmp/crawler.log &
 
 run:
 
