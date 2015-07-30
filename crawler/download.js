@@ -1,5 +1,7 @@
-var mongoose = require('./mongoose'),
+var Mongo = require('./mongoose'),
+    models = Mongo.models,
     Q = require('q'),
+    _ = require('lodash'),
     colors = require('colors'),
     http = require('http'),
     parser = require('./parser.js'),
@@ -112,15 +114,19 @@ var self = {
     },
 
     processStates: function() {
-        self.downloadStates
+        var statesUrl = baseUrl + 'Lista_Tot_Es_Estado.asp';
+
+        self.downloadStates(statesUrl)
             .then(function(states) {
                 Mongo.save(states, models.State);
                 var statesLength = states.length;
 
-                _.forEach(states, function(state, key) {
-                    console.log(key, ' de ', statesLength);
-                    downloadCities(state.url)
-                        .then(processCities);
+                self.forSync(states, function(state, done) {
+                    self.downloadCities(state.url)
+                        .then(function(cities) {
+                            self.processCities(cities)
+                            done();
+                        });
                 });
             });
     },
@@ -128,51 +134,98 @@ var self = {
     processCities: function(cities) {
         Mongo.save(cities, models.City);
 
-        _.forEach(cities, function(city, key) {
+        self.forSync(cities, function(city, done) {
             self.downloadEntitiesUrls(city.url)
-                .then(self.processEntities);
+                .then(function(entitiesUrls) {
+                    self.processEntitiesUrl(entitiesUrls)
+                    done();
+                });
         });
     },
 
-    processEntities: function(entitiesUrls) {
-
-        //Mongo.getCursor...
-
-        self.downloadEntity()
-            .then(function(states) {
-                Mongo.save(states, models.State);
-                var statesLength = states.length;
-
-                _.forEach(states, function(state, key) {
-                    console.log(key, ' de ', statesLength);
-                    downloadCities(state.url)
-                        .then(processCities);
-                });
-            });
+    processEntitiesUrl: function(entitiesUrls) {
+        Mongo.save(entitiesUrls, models.EntityToDownload);
     },
 
-    initializeUrls: function() {
-        var cities = Mongo.getAllCities(function(citiesCursor) {
-            var processItem = function(item, done) {
-                var downloadReference;
-                var onFinish = function() {
-                    item.done = 'true';
-                    Mongo.update_city(item);
-                    processItem = null;
-                    downloadReference = null;
-                    global.gc();
+    processEntities: function() {
+        self.paginateDatabaseAsStream(models.EntityToDownload, function(entityToDownload, done) {
+            self.downloadEntity(entityToDownload.url)
+                .then(function(entity) {
+                    Mongo.save(entity, models.Entity);
                     done();
+                });
+        });
+    },
+
+    makeIterator: function(array) {
+        var nextIndex = 0;
+
+        return {
+            next: function() {
+                return nextIndex < array.length ? {
+                    value: array[nextIndex++],
+                    done: false
+                } : {
+                    done: true
                 };
-                downloadReference = downloadEntitiesUrls(item.url, onFinish);
-            };
-            mongoProcessing(citiesCursor, processItem, 10, function(err) {
-                if (err) {
-                    console.error('on noes, an error', err);
-                    process.exit(1);
+            }
+        }
+    },
+
+    forSync: function(array, processFunction) {
+        var cursor = self.makeIterator(array);
+
+        var process = function(cursor) {
+            var value = cursor.next();
+
+            processFunction(value.value, function() {
+                return process(cursor);
+            });
+        };
+
+        process(cursor);
+    },
+
+    /*
+        Return a Stream in order to make it iterable and reducing memory consumption.
+
+        @param ModelObject - The model that will be searched on database.
+        @param processFunction - the function that will receive the database document, the function should
+            receive as a second parameter the `done` function that has to be called at the end. In case
+            of exceptions you must have to pass it into the `done` function.
+
+    */
+    paginateDatabaseAsStream: function(ModelObject, processFunction) {
+        Mongo.count(ModelObject, function(total) {
+            var stream = Mongo.find(ModelObject);
+
+            stream.on('data', function(doc) {
+                stream.pause();
+
+                var message = count + " of " + total;
+                console.log(message.green);
+
+                try {
+                    processFunction(doc, function(err) {
+                        if (err) console.log(err);
+                        stream.resume();
+                        count++;
+                    });
+                } catch (e) {
+                    console.log(e);
+                    stream.resume();
+                    count++;
                 }
             });
         });
+    },
+
+    initialize: function() {
+        self.processStates();
+        //self.processEntities();
     }
 };
+
+self.initialize();
 
 module.exports = self;
