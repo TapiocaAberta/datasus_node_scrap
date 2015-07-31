@@ -1,5 +1,4 @@
 var mongoose = require('mongoose');
-
 var self = {
     City: mongoose.model('City', {
         'Estado': String,
@@ -10,7 +9,6 @@ var self = {
         'done': String,
         'url': String
     }),
-
     Entity: mongoose.model('Entity', {
         'Nome': String,
         'CNES': String,
@@ -40,14 +38,12 @@ var self = {
         'VEstado': String,
         'VCodMunicipio': String
     }),
-
     EntityUrl: mongoose.model('EntityUrl', {
         'url': String,
         'VCo_Unidade': String,
         'VEstado': String,
         'VCodMunicipio': String
     }),
-
     State: mongoose.model('State', {
         'estado_nome': String,
         'estado_total': String,
@@ -55,5 +51,4 @@ var self = {
         'url': String
     })
 };
-
 module.exports = self;

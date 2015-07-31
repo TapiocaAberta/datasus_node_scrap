@@ -161,14 +161,14 @@ var self = {
         process(cursor);
     },
     /*
-          Return a Stream in order to make it iterable and reducing memory consumption.
+            Return a Stream in order to make it iterable and reducing memory consumption.
 
-          @param ModelObject - The model that will be searched on database.
-          @param processFunction - the function that will receive the database document, the function should
-              receive as a second parameter the `done` function that has to be called at the end. In case
-              of exceptions you must have to pass it into the `done` function.
+            @param ModelObject - The model that will be searched on database.
+            @param processFunction - the function that will receive the database document, the function should
+                receive as a second parameter the `done` function that has to be called at the end. In case
+                of exceptions you must have to pass it into the `done` function.
 
-      */
+        */
     paginateDatabaseAsStream: function(ModelObject, processFunction) {
         Mongo.count(ModelObject, function(total) {
             var stream = Mongo.find(ModelObject);

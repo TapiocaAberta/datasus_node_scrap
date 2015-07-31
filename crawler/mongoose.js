@@ -7,9 +7,7 @@ var mongoose = require('mongoose'),
     Q = require('q'),
     colors = require('colors');
 mongoose.connect('mongodb://localhost/cnes2015');
-
 var models = require('./models');
-
 module.exports = {
     models: models,
     save: function(entities, ModelObject) {
