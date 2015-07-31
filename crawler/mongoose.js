@@ -6,9 +6,7 @@
 var mongoose = require('mongoose'),
     Q = require('q'),
     colors = require('colors');
-
 mongoose.connect('mongodb://localhost/cnes2015');
-
 var models = {
     City: mongoose.model('City', {
         'Estado': String,
@@ -19,7 +17,6 @@ var models = {
         'done': String,
         'url': String
     }),
-
     Entity: mongoose.model('Entity', {
         'Nome': String,
         'CNES': String,
@@ -49,29 +46,24 @@ var models = {
         'VEstado': String,
         'VCodMunicipio': String
     }),
-
     EntityUrl: mongoose.model('EntityUrl', {
         'url': String,
         'VCo_Unidade': String,
         'VEstado': String,
         'VCodMunicipio': String
     }),
-
     State: mongoose.model('State', {
         'estado_nome': String,
         'estado_total': String,
         'estado_%': String,
         'url': String
     })
-}
-
+};
 module.exports = {
     models: models,
-
     save: function(entities, ModelObject) {
         var deferred = Q.defer();
         var isSaved = false;
-
         if (Object.prototype.toString.call(entities) === '[object Array]') {
             for (var i = entities.length - 1; i >= 0; i--) {
                 var ent = JSON.flatten(entities[i]);
@@ -94,7 +86,6 @@ module.exports = {
         }
         return deferred.promise;
     },
-
     delete: function(json, ModelObject) {
         var deferred = Q.defer();
         ModelObject.remove(json, function(error) {
@@ -105,11 +96,9 @@ module.exports = {
         });
         return deferred.promise;
     },
-
     findOne: function(json, ModelObject) {
         var deferred = Q.defer();
         var inputJson = json || {};
-
         ModelObject.findOne(inputJson, function(error, result) {
             if (error) {
                 deferred.reject(error);
@@ -118,19 +107,16 @@ module.exports = {
         });
         return deferred.promise;
     },
-
     find: function(ModelObject) {
         var stream = ModelObject.find({}).stream();
         return stream;
     },
-
     count: function(ModelObject, callback) {
         ModelObject.count({}, function(err, count) {
             callback(count);
         });
     }
 };
-
 JSON.flatten = function(data) {
     var result = {};
 

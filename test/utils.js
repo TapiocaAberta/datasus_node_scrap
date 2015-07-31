@@ -1,12 +1,8 @@
 'use strict';
-
 var _ = require('lodash');
-
 var utils = module.exports = {
-
     getEntityObj: function(params) {
         params = params || {};
-
         return _.extend({
             'Nome': 'VOTOMED MEDICOS ASSOCIADOS',
             'CNES': '3507823',
