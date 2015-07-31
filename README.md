@@ -55,7 +55,7 @@ create a file with the following content on `/etc/cron.d/crawler` (without the e
 	#!/bin/sh
 	pkill node
 	cd "<PATH_OF_SOURCE>/node_scrap/"
-	<YOUR_NODE_PATH>/node --max-old-space-size=8192 --expose-gc crawler/download.js > /tmp/crawler.log &
+	<YOUR_NODE_PATH>/node --max-old-space-size=8192 index.js > /tmp/crawler.log &
 
 run:
 
@@ -63,20 +63,18 @@ run:
 
 add this on the last line of the file:
 
-	*/1 * * * * /bin/sh /etc/cron.d/crawler
+	*/2 * * * * /bin/sh /etc/cron.d/crawler
 
-This will run automatically the script `/etc/cron.d/crawler` on the interval of 1 in 1 minute, It would be kill and re-execute the crawler script.
+This will run automatically the script `/etc/cron.d/crawler` on the interval of 2 in 2 minute, It would be kill and re-execute the crawler script.
 
 # Running the crawler
 ## First Step
 
-First of all you need to change the function "initialize" of the class crawler/download.js, which the content is something like that:
+First of all you need to change the function "initialize" of the class index.js, which the content is something like that:
 
 ```js
-initialize: function() {
-    self.processStates();
-    //self.processEntities();
-}
+downloadModule.processStates();
+//downloadModule.processEntities();
 ```
 
 The first step is to execute the function `processStates()` this function will download all the urls of the entities, in order to make the process synchronous, and it will maintain the control of what register was downloaded.
@@ -99,11 +97,12 @@ You must backup the collection `entityurls` to `entityurls_bak` by using the fol
 Then, you have to change the function `initialize` in order to make it call the function that download the entity details:
 
 ```js
-initialize: function() {
-    //self.processStates();
-    self.processEntities();
-}
+//downloadModule.processStates();
+downloadModule.processEntities();
+
 ```
+
+You can now check your log with tail: `tail -f /tmp/crawler.log`
 
 # How to export
 
