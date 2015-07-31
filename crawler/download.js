@@ -160,11 +160,11 @@ var self = {
     },
 
     processEntitiesUrl: function(entitiesUrls) {
-        Mongo.save(entitiesUrls, models.EntityToDownload);
+        Mongo.save(entitiesUrls, models.EntityUrl);
     },
 
     processEntities: function() {
-        self.paginateDatabaseAsStream(models.EntityToDownload, function(entityToDownload, done) {
+        self.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
             self.downloadEntity(entityToDownload.url)
                 .then(function(entity) {
                     Mongo.save(entity, models.Entity);
@@ -243,8 +243,8 @@ var self = {
     },
 
     initialize: function() {
-        self.processStates();
-        //self.processEntities();
+        //self.processStates();
+        self.processEntities();
     }
 };
 
