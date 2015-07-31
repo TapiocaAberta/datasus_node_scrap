@@ -48,7 +48,7 @@ The script consumes a lot of memory in order of their execution time. On the fir
 
 A real fixes to this problem is to study how the V8 garbage collector works, and pay attention to remove the closure variables to improve less memory consumption.
 
-So, an work around to this problem is to kill and reopen the script in determined cycle of time using CRON. To do that, run the follow instructions:
+So, an work around to this problem is to kill and reopen the script in determined cycle of time using CRON. To do that, run the following instructions:
 
 create a file with the following content on `/etc/cron.d/crawler` (without the extension '.sh')
 
