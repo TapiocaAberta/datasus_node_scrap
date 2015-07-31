@@ -122,24 +122,40 @@ var self = {
                 var statesLength = states.length;
 
                 self.forSync(states, function(state, done) {
-                    self.downloadCities(state.url)
-                        .then(function(cities) {
-                            self.processCities(cities)
-                            done();
-                        });
+                    if (!state.done) {
+                        self.downloadCities(state.value.url)
+                            .then(function(cities) {
+                                self.processCities(cities, done);
+                            });
+                    }
                 });
             });
     },
 
-    processCities: function(cities) {
-        Mongo.save(cities, models.City);
-
+    processCities: function(cities, statesDone) {
         self.forSync(cities, function(city, done) {
-            self.downloadEntitiesUrls(city.url)
-                .then(function(entitiesUrls) {
-                    self.processEntitiesUrl(entitiesUrls)
-                    done();
-                });
+            if (!city.done) {
+                var cityUrl = city.value.url;
+                var searchJson = {
+                    url: cityUrl
+                };
+
+                Mongo.findOne(searchJson, models.City).then(
+                    function(exists) {
+                        if (!exists) {
+                            self.downloadEntitiesUrls(cityUrl)
+                                .then(function(entitiesUrls) {
+                                    self.processEntitiesUrl(entitiesUrls);
+                                    Mongo.save(city.value, models.City);
+                                    done();
+                                });
+                        } else {
+                            done();
+                        }
+                    });
+            } else {
+                return statesDone();
+            }
         });
     },
 
@@ -162,12 +178,18 @@ var self = {
 
         return {
             next: function() {
-                return nextIndex < array.length ? {
-                    value: array[nextIndex++],
-                    done: false
-                } : {
-                    done: true
-                };
+                if (nextIndex < array.length) {
+                    nextItem = {
+                        value: array[nextIndex++],
+                        done: false
+                    }
+                } else {
+                    nextItem = {
+                        done: true
+                    };
+                }
+
+                return nextItem;
             }
         }
     },
@@ -178,7 +200,7 @@ var self = {
         var process = function(cursor) {
             var value = cursor.next();
 
-            processFunction(value.value, function() {
+            processFunction(value, function() {
                 return process(cursor);
             });
         };
