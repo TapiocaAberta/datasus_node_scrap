@@ -85,7 +85,7 @@ More of 300.000 url's will be downloaded. You can check It on database:
 
 ```shell
  mongo
- use cnes 2015
+ use cnes2015
  show collections
  db.entitytodownloads.count();
 ```
