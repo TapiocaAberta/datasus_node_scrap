@@ -12,7 +12,7 @@ var self = {
     exportToCSV: function() {
         var processItem = function(entityDoc, done) {
             delete entityDoc._id;
-            var inlineJson = JSON.flatten(entityDoc);
+            var inlineJson = utils.flatten(entityDoc);
             var textJson = convertToCSV([inlineJson]);
             appendTextToCsv(textJson, inlineJson, done);
         };

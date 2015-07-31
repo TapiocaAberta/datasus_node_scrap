@@ -4,10 +4,13 @@
 // db.cities.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 // db.entities.ensureIndex( { "url": 1 }, { unique: true , dropDups: true} )
 var mongoose = require('mongoose'),
+    models = require('./models'),
+    utils = require('./utils'),
     Q = require('q'),
     colors = require('colors');
+
 mongoose.connect('mongodb://localhost/cnes2015');
-var models = require('./models');
+
 module.exports = {
     models: models,
     save: function(entities, ModelObject) {
@@ -15,7 +18,7 @@ module.exports = {
         var isSaved = false;
         if (Object.prototype.toString.call(entities) === '[object Array]') {
             for (var i = entities.length - 1; i >= 0; i--) {
-                var ent = JSON.flatten(entities[i]);
+                var ent = utils.flatten(entities[i]);
                 var modelObj = new ModelObject(ent);
                 modelObj.save(function(error, result) {
                     if (error) {
@@ -25,7 +28,7 @@ module.exports = {
                 });
             }
         } else {
-            var modelObj = new ModelObject(JSON.flatten(entities));
+            var modelObj = new ModelObject(utils.flatten(entities));
             modelObj.save(function(error, result) {
                 if (error) {
                     deferred.reject(error);

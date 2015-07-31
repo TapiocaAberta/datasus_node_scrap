@@ -1,5 +1,6 @@
 var Mongo = require('./mongoose'),
     models = Mongo.models,
+    utils = require('./utils'),
     Q = require('q'),
     _ = require('lodash'),
     colors = require('colors'),
@@ -8,6 +9,7 @@ var Mongo = require('./mongoose'),
     jsdom = require('jsdom'),
     jquery = require('jquery'),
     iconv = require('iconv-lite');
+
 var baseUrl = 'http://cnes.datasus.gov.br/';
 var self = {
     doGet: function(url) {
@@ -89,7 +91,7 @@ var self = {
         self.downloadStates(statesUrl).then(function(states) {
             Mongo.save(states, models.State);
             var statesLength = states.length;
-            self.forSync(states, function(state, done) {
+            utils.forSync(states, function(state, done) {
                 if (!state.done) {
                     self.downloadCities(state.value.url).then(function(cities) {
                         self.processCities(cities, done);
@@ -99,7 +101,7 @@ var self = {
         });
     },
     processCities: function(cities, statesDone) {
-        self.forSync(cities, function(city, done) {
+        utils.forSync(cities, function(city, done) {
             if (!city.done) {
                 var cityUrl = city.value.url;
                 var searchJson = {
@@ -125,69 +127,10 @@ var self = {
         Mongo.save(entitiesUrls, models.EntityUrl);
     },
     processEntities: function() {
-        self.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
+        utils.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
             self.downloadEntity(entityToDownload.url).then(function(entity) {
                 Mongo.save(entity, models.Entity);
                 done();
-            });
-        });
-    },
-    makeIterator: function(array) {
-        var nextIndex = 0;
-        return {
-            next: function() {
-                if (nextIndex < array.length) {
-                    nextItem = {
-                        value: array[nextIndex++],
-                        done: false
-                    };
-                } else {
-                    nextItem = {
-                        done: true
-                    };
-                }
-                return nextItem;
-            }
-        };
-    },
-    forSync: function(array, processFunction) {
-        var cursor = self.makeIterator(array);
-        var process = function(cursor) {
-            var value = cursor.next();
-            processFunction(value, function() {
-                return process(cursor);
-            });
-        };
-        process(cursor);
-    },
-    /*
-            Return a Stream in order to make it iterable and reducing memory consumption.
-
-            @param ModelObject - The model that will be searched on database.
-            @param processFunction - the function that will receive the database document, the function should
-                receive as a second parameter the `done` function that has to be called at the end. In case
-                of exceptions you must have to pass it into the `done` function.
-
-        */
-    paginateDatabaseAsStream: function(ModelObject, processFunction) {
-        Mongo.count(ModelObject, function(total) {
-            var stream = Mongo.find(ModelObject);
-            stream.on('data', function(doc) {
-                stream.pause();
-                var message = count + ' of ' + total;
-                console.log(message.green);
-                try {
-                    processFunction(doc, function(err) {
-                        if (err)
-                            console.log(err);
-                        stream.resume();
-                        count++;
-                    });
-                } catch (e) {
-                    console.log(e);
-                    stream.resume();
-                    count++;
-                }
             });
         });
     }
