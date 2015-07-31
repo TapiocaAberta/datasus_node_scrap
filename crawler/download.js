@@ -1,4 +1,4 @@
-var Mongo = require('./mongoose'),
+var Mongo = require('./db'),
     models = Mongo.models,
     utils = require('./utils'),
     Q = require('q'),
@@ -127,7 +127,7 @@ var self = {
         Mongo.save(entitiesUrls, models.EntityUrl);
     },
     processEntities: function() {
-        utils.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
+        Mongo.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
             self.downloadEntity(entityToDownload.url).then(function(entity) {
                 Mongo.save(entity, models.Entity);
                 done();

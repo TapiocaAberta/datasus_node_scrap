@@ -1,4 +1,4 @@
-var module = require('../crawler/mongoose'),
+var module = require('../crawler/db'),
     path = require('path'),
     _ = require('lodash'),
     fs = require('fs'),

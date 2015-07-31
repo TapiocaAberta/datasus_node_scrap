@@ -11,7 +11,7 @@ var mongoose = require('mongoose'),
 
 mongoose.connect('mongodb://localhost/cnes2015');
 
-module.exports = {
+var self = {
     models: models,
     save: function(entities, ModelObject) {
         var deferred = Q.defer();
@@ -67,5 +67,38 @@ module.exports = {
         ModelObject.count({}, function(err, count) {
             callback(count);
         });
+    },
+    /*
+        Return a Stream in order to make it iterable and reducing memory consumption.
+
+        @param ModelObject - The model that will be searched on database.
+        @param processFunction - the function that will receive the database document, the function should
+            receive as a second parameter the `done` function that has to be called at the end. In case
+            of exceptions you must have to pass it into the `done` function.
+
+    */
+    paginateDatabaseAsStream: function(ModelObject, processFunction) {
+        self.count(ModelObject, function(total) {
+            var stream = self.find(ModelObject);
+            stream.on('data', function(doc) {
+                stream.pause();
+                var message = count + ' of ' + total;
+                console.log(message.green);
+                try {
+                    processFunction(doc, function(err) {
+                        if (err)
+                            console.log(err);
+                        stream.resume();
+                        count++;
+                    });
+                } catch (e) {
+                    console.log(e);
+                    stream.resume();
+                    count++;
+                }
+            });
+        });
     }
 };
+
+module.exports = self;

@@ -1,4 +1,4 @@
-var mongoose = require('./mongoose'),
+var mongoose = require('./db'),
     Q = require('q'),
     colors = require('colors');
 var baseUrl = 'http://cnes.datasus.gov.br/';
