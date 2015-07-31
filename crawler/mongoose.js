@@ -57,13 +57,6 @@ var models = {
         'VCodMunicipio': String
     }),
 
-    EntityToDownload: mongoose.model('EntityToDownload', {
-        'url': String,
-        'VCo_Unidade': String,
-        'VEstado': String,
-        'VCodMunicipio': String
-    }),
-
     State: mongoose.model('State', {
         'estado_nome': String,
         'estado_total': String,
