@@ -190,11 +190,7 @@ var self = {
                 }
             });
         });
-    },
-    initialize: function() {
-        //self.processStates();
-        self.processEntities();
     }
 };
-self.initialize();
+
 module.exports = self;
