@@ -130,6 +130,10 @@ var self = {
         Mongo.paginateDatabaseAsStream(models.EntityUrl, function(entityToDownload, done) {
             self.downloadEntity(entityToDownload.url).then(function(entity) {
                 Mongo.save(entity, models.Entity);
+                var idJson = {
+                    _id: entityToDownload._id
+                }
+                Mongo.delete(idJson, models.EntityUrl);
                 done();
             });
         });

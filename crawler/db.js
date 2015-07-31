@@ -80,6 +80,8 @@ var self = {
     paginateDatabaseAsStream: function(ModelObject, processFunction) {
         self.count(ModelObject, function(total) {
             var stream = self.find(ModelObject);
+            var count = 0;
+
             stream.on('data', function(doc) {
                 stream.pause();
                 var message = count + ' of ' + total;
