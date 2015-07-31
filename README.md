@@ -86,12 +86,22 @@ More of 300.000 url's will be downloaded. You can check It on database:
 > mongo
 > use cnes 2015
 > show collections
-> db.entitiestodownload.count();
+> db.entitytodownloads.count()
 
 ## Second step
-...
 
+You must backup the collection `entityurls` to `entityurls_bak` by using the following command:
 
+`db.entityurls.copyTo('entityurls_bak')`
+
+Then, you have to change the function `initialize` in order to make it call the function that download the entity details:
+
+```js
+initialize: function() {
+    //self.processStates();
+    self.processEntities();
+}
+```
 
 # How to export
 
