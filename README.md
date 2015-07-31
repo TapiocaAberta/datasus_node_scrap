@@ -83,10 +83,12 @@ The first step is to execute the function `processStates()` this function will d
 
 More of 300.000 url's will be downloaded. You can check It on database:
 
-> mongo
-> use cnes 2015
-> show collections
-> db.entitytodownloads.count()
+```shell
+ mongo
+ use cnes 2015
+ show collections
+ db.entitytodownloads.count();
+```
 
 ## Second step
 
