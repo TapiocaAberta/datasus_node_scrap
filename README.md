@@ -67,6 +67,32 @@ add this on the last line of the file:
 
 This will run automatically the script `/etc/cron.d/crawler` on the interval of 1 in 1 minute, It would be kill and re-execute the crawler script.
 
+# Running the crawler
+## First Step
+
+First of all you need to change the function "initialize" of the class crawler/download.js, which the content is something like that:
+
+```js
+initialize: function() {
+    self.processStates();
+    //self.processEntities();
+}
+```
+
+The first step is to execute the function `processStates()` this function will download all the urls of the entities, in order to make the process synchronous, and it will maintain the control of what register was downloaded.
+
+More of 300.000 url's will be downloaded. You can check It on database:
+
+> mongo
+> use cnes 2015
+> show collections
+> db.entitiestodownload.count();
+
+## Second step
+...
+
+
+
 # How to export
 
 ## To CSV:
