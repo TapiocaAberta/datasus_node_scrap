@@ -3,38 +3,21 @@ var mongo = require('./mongo'),
     _ = require('lodash'),
     colors = require('colors');
 var count = 0;
+
 var self = {
+
     export_to_json_file: function(json) {
         fs.writeFile('output.json', JSON.stringify(json, null, 4), function(err) {
             console.log('File successfully written! - Check your project directory for the output.json file');
         });
     },
+
     exportToCSV: function() {
-        var processItem = function(entityDoc, done) {
+        Mongo.paginateDatabaseAsStream(models.Entity, function(entityDoc, done) {
             delete entityDoc._id;
             var inlineJson = utils.flatten(entityDoc);
             var textJson = convertToCSV([inlineJson]);
             appendTextToCsv(textJson, inlineJson, done);
-        };
-        mongo.count(function(total) {
-            var stream = mongo.find();
-            stream.on('data', function(doc) {
-                stream.pause();
-                var message = count + ' of ' + total;
-                console.log(message.green);
-                try {
-                    processItem(doc._doc, function(err) {
-                        if (err)
-                            console.log(err);
-                        stream.resume();
-                        count++;
-                    });
-                } catch (e) {
-                    console.log(e);
-                    stream.resume();
-                    count++;
-                }
-            });
         });
     }
 };
