@@ -2,7 +2,6 @@ var mongo = require('./mongo'),
     fs = require('fs'),
     _ = require('lodash'),
     colors = require('colors');
-var count = 0;
 
 var self = {
 
