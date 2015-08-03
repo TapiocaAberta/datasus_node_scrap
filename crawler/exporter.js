@@ -36,7 +36,7 @@ function convertToCSV(objArray) {
         str += '\r\n';
         for (var index in array[i]) {
             if (line !== '')
-                line += ',';
+                line += '|';
             var temp = array[i][index];
             if (_.isEmpty(temp))
                 temp = '';
@@ -68,6 +68,7 @@ var appendText = function(csvPath, text, done) {
 };
 var createColumnNames = function(csvPath, entityDoc, callback) {
     var entityKeys = Object.keys(entityDoc);
-    return appendText(csvPath, entityKeys, callback);
+    var keysText = entityKeys.toString().replace(/,/g, '|');
+    return appendText(csvPath, keysText, callback);
 };
 self.exportToCSV();
