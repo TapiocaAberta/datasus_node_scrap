@@ -106,10 +106,14 @@ You can now check your log with tail: `tail -f /tmp/crawler.log`
 
 # How to export
 
-## To CSV:
+## To a Unique CSV:
 
 	cd output
 	mongoexport --db cnes --collection entities --csv --fieldFile entities_fields.txt --out entities.csv
+
+## To a separated CSV file with the UF as a file name (like SP, RJ, MG etc)
+
+	rm -rf output/*.csv && node crawler/exporter.js
 
 ## To Database dump:
 
