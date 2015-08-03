@@ -1,4 +1,6 @@
-var mongo = require('./mongo'),
+var Mongo = require('./db'),
+    models = Mongo.models,
+    utils = require('./utils'),
     fs = require('fs'),
     _ = require('lodash'),
     colors = require('colors');
@@ -12,11 +14,15 @@ var self = {
     },
 
     exportToCSV: function() {
-        Mongo.paginateDatabaseAsStream(models.Entity, function(entityDoc, done) {
+        Mongo.paginateDatabaseAsStream(models.Entity, function(entity, done) {
+            var entityDoc = entity._doc;
             delete entityDoc._id;
-            var inlineJson = utils.flatten(entityDoc);
-            var textJson = convertToCSV([inlineJson]);
-            appendTextToCsv(textJson, inlineJson, done);
+            //var inlineJson = utils.flatten(entityDoc);
+            //var textJson = convertToCSV([inlineJson]);
+            //appendTextToCsv(textJson, inlineJson, done);
+
+            var textJson = convertToCSV([entityDoc]);
+            appendTextToCsv(textJson, entityDoc, done);
         });
     }
 };
@@ -41,7 +47,7 @@ function convertToCSV(objArray) {
     return str;
 }
 var appendTextToCsv = function(text, entityDoc, done) {
-    var csvPath = 'output/output_all.csv';
+    var csvPath = 'output/' + entityDoc.UF + '.csv';
     fs.exists(csvPath, function(exists) {
         if (!exists) {
             createColumnNames(csvPath, entityDoc, function() {
